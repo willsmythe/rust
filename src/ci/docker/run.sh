@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# ignore-tidy-linelength
+
 set -e
 
 export MSYS_NO_PATHCONV=1
@@ -26,8 +28,23 @@ if [ -f "$docker_dir/$image/Dockerfile" ]; then
       docker --version >> $hash_key
       cksum=$(sha512sum $hash_key | \
         awk '{print $1}')
-      s3url="s3://$SCCACHE_BUCKET/docker/$cksum"
-      url="https://s3-us-west-1.amazonaws.com/$SCCACHE_BUCKET/docker/$cksum"
+
+      if [ "$DOCKER_LAYER_CACHE_STORAGE_ACCOUNT" != "" ]; then
+        # install azcopy
+        echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-xenial-prod/ xenial main" > azure.list
+        sudo cp ./azure.list /etc/apt/sources.list.d/
+        sudo apt-key adv --keyserver packages.microsoft.com --recv-keys EB3E94ADBE1229CF
+        sudo apt-get update
+        sudo apt-get install azcopy
+
+        url="https://$DOCKER_LAYER_CACHE_STORAGE_ACCOUNT.blob.core.windows.net/$DOCKER_LAYER_CACHE_CONTAINER_NAME/$cksum"
+        upload="azcopy --destination $url --dest-key $DOCKER_LAYER_CACHE_ACCOUNT_KEY"
+      else
+        s3url="s3://$SCCACHE_BUCKET/docker/$cksum"
+        url="https://s3-us-west-1.amazonaws.com/$SCCACHE_BUCKET/docker/$cksum"
+        upload="aws s3 cp - $s3url"
+      fi
+
       echo "Attempting to download $s3url"
       rm -f /tmp/rustci_docker_cache
       set +e
@@ -51,7 +68,7 @@ if [ -f "$docker_dir/$image/Dockerfile" ]; then
       -f "$dockerfile" \
       "$context"
 
-    if [ "$s3url" != "" ]; then
+    if [ "$upload" != "" ]; then
       digest=$(docker inspect rust-ci --format '{{.Id}}')
       echo "Built container $digest"
       if ! grep -q "$digest" <(echo "$loaded_images"); then
@@ -61,7 +78,7 @@ if [ -f "$docker_dir/$image/Dockerfile" ]; then
           grep -v missing | \
           xargs docker save | \
           gzip | \
-          aws s3 cp - $s3url
+          $upload
         set -e
       else
         echo "Looks like docker image is the same as before, not uploading"
@@ -100,6 +117,9 @@ if [ "$SCCACHE_BUCKET" != "" ]; then
     args="$args --env SCCACHE_REGION"
     args="$args --env AWS_ACCESS_KEY_ID"
     args="$args --env AWS_SECRET_ACCESS_KEY"
+elif [ "$SCCACHE_AZURE_CONNECTION_STRING" != "" ]; then
+    args="$args --env SCCACHE_AZURE_CONNECTION_STRING"
+    args="$args --env SCCACHE_AZURE_BLOB_CONTAINER"
 else
     mkdir -p $HOME/.cache/sccache
     args="$args --env SCCACHE_DIR=/sccache --volume $HOME/.cache/sccache:/sccache"
