@@ -1,3 +1,5 @@
+[![Build Status](https://dev.azure.com/johnterickson/rust-lang/_apis/build/status/rust?branchName=master)](https://dev.azure.com/johnterickson/rust-lang/_build/latest?definitionId=13&branchName=master)
+
 # The Rust Programming Language
 
 This is the main source code repository for [Rust]. It contains the compiler,
