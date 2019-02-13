@@ -40,7 +40,7 @@ jobs:
       HOST_IMAGE: ubuntu-16.04
     strategy:
       matrix:
-        x86_64-gnu-llvm-5.0:
+        x86_64-gnu-llvm-6.0:
           RUST_BACKTRACE: 1
         # if: type = pull_request OR branch = auto
 
@@ -222,53 +222,52 @@ jobs:
         # if: branch = auto
 
         asmjs:
-          DEPLOY: 1
+          DEPLOY: 0
         # if: branch = auto
 
         i686-gnu:
-          DEPLOY: 1
+          DEPLOY: 0
         # if: branch = auto
 
         i686-gnu-nopt:
-          DEPLOY: 1
+          DEPLOY: 0
         # if: branch = auto
 
-        wasm32-unknown:
-          DEPLOY: 1
+        test-various:
+          DEPLOY: 0
         # if: branch = auto
 
         x86_64-gnu:
-          DEPLOY: 1
+          DEPLOY: 0
         # if: branch = auto
 
         x86_64-gnu-full-bootstrap:
-          DEPLOY: 1
+          DEPLOY: 0
         # if: branch = auto
 
         x86_64-gnu-aux:
-          DEPLOY: 1
+          DEPLOY: 0
         # if: branch = auto
 
         x86_64-gnu-tools:
-          DEPLOY: 1
+          DEPLOY: 0
         # if: branch = auto OR (type = pull_request AND commit_message =~ /(?i:^update.*\b(rls|rustfmt|clippy|miri|cargo)\b)/)
 
         x86_64-gnu-debug:
-          DEPLOY: 1
+          DEPLOY: 0
         # if: branch = auto
 
         x86_64-gnu-nopt:
-          DEPLOY: 1
+          DEPLOY: 0
         # if: branch = auto
 
         x86_64-gnu-distcheck:
-          DEPLOY: 1
+          DEPLOY: 0
         # if: branch = auto
 
         mingw-check:
-          HOST_IMAGE: ubuntu-16.04
+          DEPLOY: 0
         # if: type = pull_request OR branch = auto
-
 
     pool:
       vmImage: $[ variables['HOST_IMAGE'] ] 
