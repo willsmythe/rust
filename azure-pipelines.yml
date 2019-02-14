@@ -38,6 +38,7 @@ jobs:
     variables:
       # by default, assuming Linux; override for osx
       HOST_IMAGE: ubuntu-16.04
+      HOST_POOL: Microsoft-hosted 
     strategy:
       matrix:
         x86_64-gnu-llvm-6.0:
@@ -270,6 +271,7 @@ jobs:
         # if: type = pull_request OR branch = auto
 
     pool:
+      pool: $[ variables['HOST_POOL'] ] 
       vmImage: $[ variables['HOST_IMAGE'] ] 
     steps:
       - script: |
@@ -409,7 +411,8 @@ jobs:
   - job: windows
     timeoutInMinutes: 600
     condition: and(succeeded(), eq(variables['BUILD_WINDOWS'],'1'))
-    variables:
+    variables: 
+      HOST_POOL: Microsoft-hosted 
       HOST_IMAGE: vs2017-win2016
     strategy:
       matrix:
@@ -518,6 +521,7 @@ jobs:
           DEPLOY: 1
           CI_JOB_NAME: dist-i686-mingw
         dist-x86_64-mingw:
+          HOST_POOL: private
           MSYS_BITS: 64
           SCRIPT: python x.py dist
           RUST_CONFIGURE_ARGS: --build=x86_64-pc-windows-gnu --enable-full-tools
@@ -537,6 +541,7 @@ jobs:
           CI_JOB_NAME: dist-x86_64-msvc-alt
 
     pool:
+      pool: $[ variables['HOST_POOL'] ]
       vmImage: $[ variables['HOST_IMAGE'] ] 
     steps:
       - script: |
@@ -713,10 +718,10 @@ jobs:
           where rev
           set | findstr /v SCCACHE_AZURE_CONNECTION_STRING
 
-          echo temporary hack until we get more space
-          echo THIS WILL PROBABLY MAKE THINGS SLOW
-          mkdir c:\MORE_SPACE
-          mklink /J build c:\MORE_SPACE
+          REM echo temporary hack until we get more space
+          REM echo THIS WILL PROBABLY MAKE THINGS SLOW
+          REM mkdir c:\MORE_SPACE
+          REM mklink /J build c:\MORE_SPACE
 
           if not exist D:\cache\rustsrc\NUL mkdir D:\cache\rustsrc
           sh src/ci/init_repo.sh . /d/cache/rustsrc
