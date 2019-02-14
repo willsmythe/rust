@@ -409,7 +409,7 @@ jobs:
     timeoutInMinutes: 600
     condition: and(succeeded(), eq(variables['BUILD_WINDOWS'],'1'))
     variables: 
-      HOST_POOL: Microsoft-hosted 
+      HOST_POOL: Hosted VS2017
       HOST_IMAGE: vs2017-win2016
     strategy:
       matrix:
