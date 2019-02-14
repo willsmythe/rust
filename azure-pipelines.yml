@@ -160,7 +160,7 @@ jobs:
         #   CI_JOB_NAME: dist-x86_64-msvc-alt
 
     steps:
-      - script:
+      - script: |
           sccache --stop-server
           timeout /t 30
           del sccache.exe
