@@ -2,9 +2,6 @@
 
 set -e
 
-echo "SRC in run.sh: $SRC"
-echo "NO_CCACHE in run.sh: $NO_CCACHE"
-
 if [ -n "$CI_JOB_NAME" ]; then
   echo "[CI_JOB_NAME=$CI_JOB_NAME]"
 fi

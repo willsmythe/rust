@@ -164,6 +164,7 @@ jobs:
           echo ##vso[task.setvariable variable=SCCACHE_DIR;]$(Agent.BuildDirectory)\sccache\temp\$(Build.BuildId)
           echo ##vso[task.prependpath]$(Agent.BuildDirectory)\sccache
           md $(Agent.BuildDirectory)\sccache
+          wmic logicaldisk get size,freespace,caption
           exit /b 0
         displayName: Set SCCACHE_DIR and add to path
 
@@ -356,10 +357,13 @@ jobs:
           set SRC=.
           set NO_CCACHE=1
 
+          wmic logicaldisk get size,freespace,caption
+
           echo if this fails, it may have been because of a full disk.
           echo dump the drive to see what's taking up space
           sh src/ci/run.sh
           set RESULT=%ERRORLEVEL%
+          wmic logicaldisk get size,freespace,caption
           if NOT "%RESULT%"=="0" dir /s d:\
           exit /b %RESULT%
         displayName: test_script
@@ -367,6 +371,3 @@ jobs:
           # explicitly decrypt secret variables
           # see https://docs.microsoft.com/en-us/azure/devops/pipelines/process/variables?view=azure-devops&tabs=yaml%2Cbatch
           SCCACHE_AZURE_CONNECTION_STRING: $(SCCACHE_AZURE_CONNECTION_STRING)
-          #SRC: $(Build.SourcesDirectory)
-          #NO_CCACHE: 1
-
