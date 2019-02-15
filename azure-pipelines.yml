@@ -32,8 +32,16 @@ variables:
 
 jobs:
   - job: windows
-    timeoutInMinutes: 200
+    timeoutInMinutes: 600
     condition: and(succeeded(), eq(variables['BUILD_WINDOWS'],'1'))
+    variables:
+      MSYS_BITS: 64
+      SCRIPT: python x.py test
+      RUST_CONFIGURE_ARGS: --build=x86_64-pc-windows-gnu
+      MINGW_URL: https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror
+      MINGW_ARCHIVE: x86_64-6.3.0-release-posix-seh-rt_v5-rev2.7z
+      MINGW_DIR: mingw64
+      CI_JOB_NAME: x86_64-mingw
     strategy:
       matrix:
         # # 32/64 bit MSVC tests
@@ -100,14 +108,13 @@ jobs:
         #   MINGW_ARCHIVE: i686-6.3.0-release-posix-dwarf-rt_v5-rev2.7z
         #   MINGW_DIR: mingw32
         #   CI_JOB_NAME: i686-mingw-2
-        x86_64-mingw:
-          MSYS_BITS: 64
-          SCRIPT: python x.py test
-          RUST_CONFIGURE_ARGS: --build=x86_64-pc-windows-gnu
-          MINGW_URL: https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror
-          MINGW_ARCHIVE: x86_64-6.3.0-release-posix-seh-rt_v5-rev2.7z
-          MINGW_DIR: mingw64
-          CI_JOB_NAME: x86_64-mingw
+        x86_64-mingw-a:
+        x86_64-mingw-b:
+        x86_64-mingw-c:
+        x86_64-mingw-d:
+        x86_64-mingw-e:
+        x86_64-mingw-f:
+
 
         # # 32/64 bit MSVC and GNU deployment
         # dist-x86_64-msvc:
