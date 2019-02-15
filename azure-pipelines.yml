@@ -165,7 +165,8 @@ jobs:
           echo ##vso[task.prependpath]$(Agent.BuildDirectory)\sccache
           md $(Agent.BuildDirectory)\sccache
         displayName: Set SCCACHE_DIR and add to path
-
+        continueOnError: true
+        
       - script: |
           sccache --stop-server
         continueOnError: true
