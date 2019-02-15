@@ -161,9 +161,12 @@ jobs:
 
     steps:
       - script: |
+          echo ##vso[task.setvariable variable=SCCACHE_DIR;]$(Agent.BuildDirectory)\sccache\temp\$(Build.BuildId)
+          echo ##vso[task.prependpath]$(Agent.BuildDirectory)\sccache
+        displayName: Set SCCACHE_DIR and add to path
+
+      - script: |
           sccache --stop-server
-          timeout /t 30
-          del sccache.exe
         continueOnError: true
         
       - checkout: self
@@ -268,11 +271,10 @@ jobs:
       - script: |
           echo ON
           echo Use Sccache built with Azure Storage support
-          powershell -Command "iwr -outf sccache.exe https://rustlangtools.blob.core.windows.net/public/stable-x86_64-pc-windows-msvc.sccache.exe"
-          set PATH=%PATH%;%CD%
-          where sccache
-          echo ##vso[task.setvariable variable=PATH;]%PATH%
+          powershell -Command "iwr -outf %Agent_BuildDirectory%\sccache\sccache.exe https://rustlangtools.blob.core.windows.net/public/stable-x86_64-pc-windows-msvc.sccache.exe"
+
         displayName: Download and install sccache
+        continueOnError: true
 
       # Note that this is originally from the github releases patch of Ninja
       - script: |
