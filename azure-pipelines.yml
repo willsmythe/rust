@@ -172,6 +172,7 @@ jobs:
         
       - checkout: self
         fetchDepth: 2
+        clean: true
 
       - script: |
           git config core.autocrlf false
