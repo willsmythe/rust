@@ -164,7 +164,6 @@ jobs:
           echo ##vso[task.setvariable variable=SCCACHE_DIR;]$(Agent.BuildDirectory)\sccache\temp\$(Build.BuildId)
           echo ##vso[task.prependpath]$(Agent.BuildDirectory)\sccache
           md $(Agent.BuildDirectory)\sccache
-          taskkill /f /im sccache.exe
           exit /b 0
         displayName: Set SCCACHE_DIR and add to path
 
@@ -368,4 +367,6 @@ jobs:
           # explicitly decrypt secret variables
           # see https://docs.microsoft.com/en-us/azure/devops/pipelines/process/variables?view=azure-devops&tabs=yaml%2Cbatch
           SCCACHE_AZURE_CONNECTION_STRING: $(SCCACHE_AZURE_CONNECTION_STRING)
+          #SRC: $(Build.SourcesDirectory)
+          #NO_CCACHE: 1
 
