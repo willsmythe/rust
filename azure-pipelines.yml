@@ -174,15 +174,17 @@ jobs:
 
     steps:
       - script: |
-          echo ##vso[task.setvariable variable=SCCACHE_DIR;]$(Agent.BuildDirectory)\sccache\temp\$(Build.BuildId)
-          echo ##vso[task.prependpath]$(Agent.BuildDirectory)\sccache
-          md $(Agent.BuildDirectory)\sccache
+          echo ##vso[task.setvariable variable=SCCACHE_DIR;]$(Build.SourcesDirectory)\_sccache\temp\$(Build.BuildId)
+          echo ##vso[task.prependpath]$(Build.SourcesDirectory)\_sccache
+          md $(Agent.BuildDirectory)\_sccache
           wmic logicaldisk get size,freespace,caption
           exit /b 0
         displayName: Set SCCACHE_DIR and add to path
 
       - script: |
           taskkill /f /im sccache.exe
+          if EXIST "%USERPROFILE%\.cargo" rmdir /s /q %USERPROFILE%\.cargo
+          if EXIST "%LOCALAPPDATA%\Mozilla\sccache" rmdir /s /q "%LOCALAPPDATA%\Mozilla\sccache"
           exit /b 0
         displayName: Stop sccache (if running)
 
@@ -300,7 +302,7 @@ jobs:
       - script: |
           echo ON
           echo Use Sccache built with Azure Storage support
-          powershell -Command "iwr -outf %Agent_BuildDirectory%\sccache\sccache.exe https://rustlangtools.blob.core.windows.net/public/stable-x86_64-pc-windows-msvc.sccache.exe"
+          powershell -Command "iwr -outf %Build_SourcesDirectory%\_sccache\sccache.exe https://rustlangtools.blob.core.windows.net/public/stable-x86_64-pc-windows-msvc.sccache.exe"
 
         displayName: Download and install sccache
         continueOnError: true
