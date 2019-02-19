@@ -175,7 +175,6 @@ jobs:
     steps:
       - script: |
           wmic logicaldisk get size,freespace,caption
-          exit /b 0
         displayName: Show disk space
 
       - script: |
@@ -200,8 +199,7 @@ jobs:
           git reset HEAD --hard
         displayName:  Enable symlinks, etc
         
-      - script: |
-          set
+      - script: set
         displayName: dump env vars
 
       - script: |
@@ -310,8 +308,6 @@ jobs:
       # Note that this is originally from the github releases patch of Ninja
       - script: |
           echo ON
-          echo %PATH%
-          echo %SCCACHE_DIR%
           powershell -Command "iwr -outf 2017-03-15-ninja-win.zip https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror/2017-03-15-ninja-win.zip"
           7z x 2017-03-15-ninja-win.zip
           set RUST_CONFIGURE_ARGS=%RUST_CONFIGURE_ARGS% --enable-ninja
