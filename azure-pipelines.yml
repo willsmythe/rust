@@ -207,7 +207,7 @@ jobs:
 
       - script: |
           @echo on
-          choco install msys2 --params="/InstallDir:D:\msys64 /NoPath" -y
+          choco install msys2 --params="/InstallDir:D:\msys64 /NoPath" -y --force
           set PATH=D:\msys64\usr\bin;%PATH%
           pacman -S --noconfirm --needed base-devel ca-certificates make diffutils tar 
           IF "%MINGW_URL%"=="" (
