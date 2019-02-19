@@ -174,12 +174,9 @@ jobs:
 
     steps:
       - script: |
-          echo ##vso[task.setvariable variable=SCCACHE_DIR;]$(Build.SourcesDirectory)\_sccache\temp\$(Build.BuildId)
-          echo ##vso[task.prependpath]$(Build.SourcesDirectory)\_sccache
-          md $(Agent.BuildDirectory)\_sccache
           wmic logicaldisk get size,freespace,caption
           exit /b 0
-        displayName: Set SCCACHE_DIR and add to path
+        displayName: Show disk space
 
       - script: |
           taskkill /f /im sccache.exe
@@ -301,15 +298,20 @@ jobs:
 
       - script: |
           echo ON
-          echo Use Sccache built with Azure Storage support
-          powershell -Command "iwr -outf %Build_SourcesDirectory%\_sccache\sccache.exe https://rustlangtools.blob.core.windows.net/public/stable-x86_64-pc-windows-msvc.sccache.exe"
-
+          #echo Use Sccache built with Azure Storage support
+          set SCCACHE_TOOL_DIR=%Build_SourcesDirectory%\_sccache
+          mkdir %SCCACHE_TOOL_DIR%
+          powershell -Command "iwr -outf %SCCACHE_TOOL_DIR%\sccache.exe https://rustlangtools.blob.core.windows.net/public/stable-x86_64-pc-windows-msvc.sccache.exe"
+          echo ##vso[task.setvariable variable=SCCACHE_DIR;]%SCCACHE_TOOL_DIR%\temp\$(Build.BuildId)
+          echo ##vso[task.prependpath]%SCCACHE_TOOL_DIR%
         displayName: Download and install sccache
         continueOnError: true
 
       # Note that this is originally from the github releases patch of Ninja
       - script: |
           echo ON
+          echo %PATH%
+          echo %SCCACHE_DIR%
           powershell -Command "iwr -outf 2017-03-15-ninja-win.zip https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror/2017-03-15-ninja-win.zip"
           7z x 2017-03-15-ninja-win.zip
           set RUST_CONFIGURE_ARGS=%RUST_CONFIGURE_ARGS% --enable-ninja
