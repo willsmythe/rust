@@ -21,6 +21,7 @@ clone_depth: 2
 build: false
 
 install:
+  - systeminfo
   - wmic logicaldisk get size,freespace,caption
   # If we need to download a custom MinGW, do so here and set the path
   # appropriately.
