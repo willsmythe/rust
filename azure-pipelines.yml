@@ -42,7 +42,6 @@ jobs:
       MINGW_ARCHIVE: x86_64-6.3.0-release-posix-seh-rt_v5-rev2.7z
       MINGW_DIR: mingw64
       CI_JOB_NAME: x86_64-mingw
-      VSTS_OVERWRITE_TEMP: false
       CARGO_HOME: d:\.cargo
     strategy:
       matrix:
