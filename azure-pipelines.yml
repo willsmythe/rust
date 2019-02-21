@@ -42,6 +42,8 @@ jobs:
       MINGW_ARCHIVE: x86_64-6.3.0-release-posix-seh-rt_v5-rev2.7z
       MINGW_DIR: mingw64
       CI_JOB_NAME: x86_64-mingw
+      VSTS_OVERWRITE_TEMP: false
+      CARGO_HOME: d:\.cargo
     strategy:
       matrix:
         # # 32/64 bit MSVC tests
@@ -110,16 +112,16 @@ jobs:
         #   CI_JOB_NAME: i686-mingw-2
         x86_64-mingw-a:
           a: 1
-        #x86_64-mingw-b:
-        #  b: 1
-        #x86_64-mingw-c:
-        #  c: 1
-        #x86_64-mingw-d:
-        #  d: 1
-        #x86_64-mingw-e:
-        #  e: 1
-        #x86_64-mingw-f:
-        #  f: 1
+        x86_64-mingw-b:
+          b: 1
+        x86_64-mingw-c:
+          c: 1
+        x86_64-mingw-d:
+          d: 1
+        x86_64-mingw-e:
+          e: 1
+        x86_64-mingw-f:
+          f: 1
 
 
         # # 32/64 bit MSVC and GNU deployment
@@ -173,16 +175,13 @@ jobs:
         #   CI_JOB_NAME: dist-x86_64-msvc-alt
 
     steps:
-      - script: wmic logicaldisk get size,freespace,caption
-        displayName: Show disk space (pre-build)
+      - script: |
+          wmic logicaldisk get size,freespace,caption
+        displayName: Show disk space
 
       - script: |
-          echo on    
           taskkill /f /im sccache.exe
-          if EXIST "c:\build" rmdir /s /q c:\build
-          if EXIST "c:\msys64" rmdir /s /q c:\msys64
-          if EXIST "c:\clang-rust" rmdir /s /q c:\clang-rust
-          if EXIST "%USERPROFILE%\.cargo" rmdir /s /q %USERPROFILE%\.cargo
+          if EXIST "d:\.cargo" rmdir /s /q d:\.cargo
           if EXIST "%LOCALAPPDATA%\Mozilla\sccache" rmdir /s /q "%LOCALAPPDATA%\Mozilla\sccache"
           exit /b 0
         displayName: Stop sccache (if running)
@@ -207,8 +206,8 @@ jobs:
 
       - script: |
           @echo on
-          choco install msys2 --params="/InstallDir:e:\msys64 /NoPath" -y --force
-          set PATH=e:\msys64\usr\bin;%PATH%
+          choco install msys2 --params="/InstallDir:D:\msys64 /NoPath" -y --force
+          set PATH=D:\msys64\usr\bin;%PATH%
           pacman -S --noconfirm --needed base-devel ca-certificates make diffutils tar 
           IF "%MINGW_URL%"=="" (
             IF "%MSYS_BITS%"=="32" pacman -S --noconfirm --needed mingw-w64-i686-toolchain mingw-w64-i686-cmake mingw-w64-i686-gcc mingw-w64-i686-python2
@@ -231,7 +230,7 @@ jobs:
           echo ON
           echo curl %MINGW_URL%/%MINGW_ARCHIVE% --output %MINGW_ARCHIVE% -s | bash
           7z x -y %MINGW_ARCHIVE% > nul
-          set PATH=%CD%\%MINGW_DIR%\bin;e:\msys64\usr\bin;%PATH%
+          set PATH=%CD%\%MINGW_DIR%\bin;D:\msys64\usr\bin;%PATH%
           echo ##vso[task.setvariable variable=PATH;]%PATH%
         condition: and(succeeded(), ne(variables['MINGW_URL'],''))
         displayName: Download custom MinGW
@@ -249,8 +248,8 @@ jobs:
       - script: |
           echo ON
           powershell -Command "iwr -outf LLVM-7.0.0-win64.exe https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror/LLVM-7.0.0-win64.exe"
-          .\LLVM-7.0.0-win64.exe /S /NCRC /D=e:\clang-rust
-          set RUST_CONFIGURE_ARGS=%RUST_CONFIGURE_ARGS% --set llvm.clang-cl=e:\clang-rust\bin\clang-cl.exe
+          .\LLVM-7.0.0-win64.exe /S /NCRC /D=D:\clang-rust
+          set RUST_CONFIGURE_ARGS=%RUST_CONFIGURE_ARGS% --set llvm.clang-cl=D:\clang-rust\bin\clang-cl.exe
           echo ##vso[task.setvariable variable=RUST_CONFIGURE_ARGS;]%RUST_CONFIGURE_ARGS%
         condition: and(succeeded(), eq(variables['MINGW_URL'],''))
         displayName: Download clang
@@ -285,7 +284,7 @@ jobs:
           echo Find mingw
           set PATH | findstr /i msys
           set PATH | findstr /i mingw
-          set PATH=e:\msys64\mingw%MSYS_BITS%\bin;e:\msys64\usr\bin;%PATH%
+          set PATH=D:\msys64\mingw%MSYS_BITS%\bin;D:\msys64\usr\bin;%PATH%
           echo ##vso[task.setvariable variable=PATH;]%PATH%
         condition: and(succeeded(), eq(variables['MINGW_URL'],''))
         displayName: Add MinGW to path
@@ -300,7 +299,7 @@ jobs:
       - script: |
           echo ON
           #echo Use Sccache built with Azure Storage support
-          set SCCACHE_TOOL_DIR=e:\sccache
+          set SCCACHE_TOOL_DIR=%Build_SourcesDirectory%\_sccache
           mkdir %SCCACHE_TOOL_DIR%
           powershell -Command "iwr -outf %SCCACHE_TOOL_DIR%\sccache.exe https://rustlangtools.blob.core.windows.net/public/stable-x86_64-pc-windows-msvc.sccache.exe"
           echo ##vso[task.setvariable variable=SCCACHE_DIR;]%SCCACHE_TOOL_DIR%\temp\$(Build.BuildId)
@@ -363,29 +362,27 @@ jobs:
           where rev
           set | findstr /v SCCACHE_AZURE_CONNECTION_STRING
 
-          REM echo hack as drive D is too small
-          mkdir e:\build
-          mklink /J build e:\build
+          REM echo temporary hack until we get more space
+          REM echo THIS WILL PROBABLY MAKE THINGS SLOW
+          REM mkdir c:\MORE_SPACE
+          REM mklink /J build c:\MORE_SPACE
 
-          if not exist e:\cache\rustsrc\NUL mkdir e:\cache\rustsrc
-          sh src/ci/init_repo.sh . /e/cache/rustsrc
+          if not exist D:\cache\rustsrc\NUL mkdir D:\cache\rustsrc
+          sh src/ci/init_repo.sh . /d/cache/rustsrc
           set SRC=.
           set NO_CCACHE=1
+
+          wmic logicaldisk get size,freespace,caption
 
           echo if this fails, it may have been because of a full disk.
           echo dump the drive to see what's taking up space
           sh src/ci/run.sh
           set RESULT=%ERRORLEVEL%
-          REM if NOT "%RESULT%"=="0" dir /s d:\
-
+          wmic logicaldisk get size,freespace,caption
+          if NOT "%RESULT%"=="0" dir /s d:\
           exit /b %RESULT%
         displayName: test_script
         env:
           # explicitly decrypt secret variables
           # see https://docs.microsoft.com/en-us/azure/devops/pipelines/process/variables?view=azure-devops&tabs=yaml%2Cbatch
           SCCACHE_AZURE_CONNECTION_STRING: $(SCCACHE_AZURE_CONNECTION_STRING)
-      
-      - script: wmic logicaldisk get size,freespace,caption
-        displayName: Show disk space (post-build)
-        condition: always()
-  
