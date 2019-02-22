@@ -34,8 +34,8 @@ jobs:
       vmImage: 'vs2017-win2016'
     timeoutInMinutes: 600
     condition: and(succeeded(), eq(variables['BUILD_WINDOWS'],'1'))
-    variables:
-      SCCACHE_AZURE_CONNECTION_STRING: $(SCCACHE_CONNECTION)
+
+    variables:      
       MSYS_BITS: 64
       SCRIPT: python x.py test
       RUST_CONFIGURE_ARGS: --build=x86_64-pc-windows-gnu
@@ -303,6 +303,8 @@ jobs:
           %SCCACHE_TOOL_DIR%\sccache.exe --show-stats
         displayName: Download and install sccache
         continueOnError: true
+        env:
+          SCCACHE_AZURE_CONNECTION_STRING: $(SCCACHE_CONNECTION)
 
       # Note that this is originally from the github releases patch of Ninja
       - script: |
