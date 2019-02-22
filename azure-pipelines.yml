@@ -35,7 +35,7 @@ jobs:
     timeoutInMinutes: 600
     condition: and(succeeded(), eq(variables['BUILD_WINDOWS'],'1'))
     variables:
-      SCCACHE_AZURE_CONNECTION_STRING: $(SCCACHE_AZURE_CONNECTION_STRING)
+      SCCACHE_AZURE_CONNECTION_STRING: $(SCCACHE_CONNECTION)
       MSYS_BITS: 64
       SCRIPT: python x.py test
       RUST_CONFIGURE_ARGS: --build=x86_64-pc-windows-gnu
@@ -163,6 +163,10 @@ jobs:
         #   CI_JOB_NAME: dist-x86_64-msvc-alt
 
     steps:
+      - script: set SC
+        displayName: Show S environment variables
+        continueOnError: true
+
       - script: wmic logicaldisk get size,freespace,caption
         displayName: Show disk space (pre-build)
 
