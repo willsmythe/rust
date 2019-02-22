@@ -327,55 +327,25 @@ jobs:
           handle.exe -accepteula -help
           echo ##vso[task.setvariable variable=PATH;]%PATH%
         displayName: Help debug some handle issues on AppVeyor
-
-      - script: |
-          echo ON
-
-          echo Emulate for CiEnv
-          set CI=true
-          set APPVEYOR=True
-
-          REM echo Since we only need rev for a doc-build, just make a fake one as installing
-          REM echo msys2 caused more trouble
-          REM echo https://github.com/johnterickson/rust/issues/5
-          REM copy /y %WINDIR%\system32\PING.EXE rev.exe
-          REM other doc-builds require a working rev
-          REM https://github.com/rust-lang/rust/blob/79d8a0fcefa5134db2a94739b1d18daa01fc6e9f/src/libstd/process.rs line 1056
-
-          REM echo force the specific VS version https://github.com/johnterickson/rust/issues/8
-          IF "%VCVARS_BAT%" NEQ "" ( 
-            CALL "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\%VCVARS_BAT%"
-          )
-
-          echo Check enviornment
-          set PATH
-          set RUST_CONFIGURE_ARGS
-          where sccache
-          where rev
-          set | findstr /v SCCACHE_AZURE_CONNECTION_STRING
-
-          REM echo hack as drive D is too small
-          mkdir c:\build
-          mklink /J build c:\build
-
-          if not exist D:\cache\rustsrc\NUL mkdir D:\cache\rustsrc
-          sh src/ci/init_repo.sh . /d/cache/rustsrc
-          set SRC=.
-          set NO_CCACHE=1
-
-          echo if this fails, it may have been because of a full disk.
-          echo dump the drive to see what's taking up space
-          sh src/ci/run.sh
-          set RESULT=%ERRORLEVEL%
-          REM if NOT "%RESULT%"=="0" dir /s d:\
-
-          exit /b %RESULT%
-        displayName: test_script
-        env:
-          # explicitly decrypt secret variables
-          # see https://docs.microsoft.com/en-us/azure/devops/pipelines/process/variables?view=azure-devops&tabs=yaml%2Cbatch
-          SCCACHE_AZURE_CONNECTION_STRING: $(SCCACHE_AZURE_CONNECTION_STRING)
       
+      - script: |
+          if not exist D:\cache\rustsrc\NUL mkdir D:\cache\rustsrc
+        displayName: Create cache directory
+
+      - bash: src/ci/init_repo.sh . /d/cache/rustsrc
+        env:
+          CI: true
+          APPVEYOR: True
+        displayName: init_repo
+
+      - bash: src/ci/run.sh
+        env:
+          SRC: .
+          NO_CCACHE: 1
+          CI: true
+          APPVEYOR: True
+        displayName: run
+         
       - script: wmic logicaldisk get size,freespace,caption
         displayName: Show disk space (post-build)
         condition: always()
