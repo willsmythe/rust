@@ -330,7 +330,9 @@ jobs:
       
       - script: |
           if not exist D:\cache\rustsrc\NUL mkdir D:\cache\rustsrc
-        displayName: Create cache directory
+          mkdir c:\build
+          mklink /J build c:\build
+        displayName: Create cache directory / c:\build
 
       - bash: src/ci/init_repo.sh . /d/cache/rustsrc
         env:
