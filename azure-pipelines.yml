@@ -22,13 +22,12 @@ variables:
   CARGO_HTTP_CHECK_REVOKE: false
   
   # for sccache to work
-  SCCACHE_AZURE_BLOB_CONTAINER: rust-sccache-1
+  SCCACHE_AZURE_BLOB_CONTAINER: sccache
+  SCCACHE_AZURE_CONNECTION_STRING: $(SCCACHE_AZURE_CONNECTION_STRING)
 
   # for docker caching
   DOCKER_LAYER_CACHE_STORAGE_ACCOUNT: rustlangtools
   DOCKER_LAYER_CACHE_CONTAINER_NAME: docker
-
-  ProgressPreference: 'SilentlyContinue'
 
 jobs:
   - job: windows
@@ -296,6 +295,8 @@ jobs:
           powershell -Command "iwr -outf %SCCACHE_TOOL_DIR%\sccache.exe https://rustlangtools.blob.core.windows.net/public/stable-x86_64-pc-windows-msvc.sccache.exe"
           echo ##vso[task.setvariable variable=SCCACHE_DIR;]%SCCACHE_TOOL_DIR%\temp\$(Build.BuildId)
           echo ##vso[task.prependpath]%SCCACHE_TOOL_DIR%
+          %SCCACHE_TOOL_DIR%\sccache.exe --start-server
+          %SCCACHE_TOOL_DIR%\sccache.exe --show-stats
         displayName: Download and install sccache
         continueOnError: true
 
@@ -348,5 +349,9 @@ jobs:
          
       - script: wmic logicaldisk get size,freespace,caption
         displayName: Show disk space (post-build)
+        condition: always()
+
+      - script: sccache.exe --show-stats
+        displayName: Show sccache stats
         condition: always()
   
