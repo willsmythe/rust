@@ -23,7 +23,6 @@ variables:
   
   # for sccache to work
   SCCACHE_AZURE_BLOB_CONTAINER: sccache
-  SCCACHE_AZURE_CONNECTION_STRING: $(SCCACHE_AZURE_CONNECTION_STRING)
 
   # for docker caching
   DOCKER_LAYER_CACHE_STORAGE_ACCOUNT: rustlangtools
@@ -36,6 +35,7 @@ jobs:
     timeoutInMinutes: 600
     condition: and(succeeded(), eq(variables['BUILD_WINDOWS'],'1'))
     variables:
+      SCCACHE_AZURE_CONNECTION_STRING: $(SCCACHE_AZURE_CONNECTION_STRING)
       MSYS_BITS: 64
       SCRIPT: python x.py test
       RUST_CONFIGURE_ARGS: --build=x86_64-pc-windows-gnu
@@ -354,4 +354,3 @@ jobs:
       - script: sccache.exe --show-stats
         displayName: Show sccache stats
         condition: always()
-  
