@@ -1,0 +1,114 @@
+steps:
+  - script: sudo apt install gdb
+    displayName: Install GDB
+  
+  # TODO: need to install the AWS CLI here? What is rustsrc used for?   
+  - script: |
+      pip install --user awscli
+      export PATH=$PATH:$HOME/.local/bin:$HOME/Library/Python/2.7/bin/
+      mkdir -p $HOME/rustsrc
+      echo "##vso[task.setvariable variable=PATH;]$PATH"
+    displayName:  Prep (before_install)
+
+  # TODO: comment out for now ... not sure Azure Pipelines has this problem
+  # FIXME(#46924): these two commands are required to enable IPv6,
+  # they shouldn't exist, please revert once more official solutions appeared.
+  # see https://github.com/travis-ci/travis-ci/issues/8891#issuecomment-353403729
+  #- script: |
+  #    echo '{"ipv6":true,"fixed-cidr-v6":"fd9a:8454:6789:13f7::/64"}' | sudo tee /etc/docker/daemon.json
+  #    sudo service docker restart
+  #  condition: and(succeeded(), eq(variables['Agent.OS'],'Linux'))
+  #  displayName: Enable IPv6
+    
+  # TODO: can this go in the step above? think so .. avoids having to come up with a name for it
+  - script: |
+      curl -fo $HOME/stamp https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror/2017-03-17-stamp-x86_64-unknown-linux-musl
+      chmod +x $HOME/stamp
+      export PATH=$PATH:$HOME
+      echo "##vso[task.setvariable variable=PATH;]$PATH"
+#    condition: and(succeeded(), eq(variables['Agent.OS'],'Linux'))
+    displayName: Add stamp
+
+#  - script: |
+#      echo "#### Disk usage before running script:"
+#      df -h
+#      du . | sort -nr | head -n100
+#    displayName: check disk usage
+
+  # TODO: Usng the job display name feels brittle. Is there a different varibale representing the current matrix entry name?
+  # TODO: should update the 2 scripts that look for TRAVIS_OS_NAME (look for AGENT_OS too)
+  - script: |
+      echo "Job display name: $SYSTEM_JOBDISPLAYNAME"
+      set -x
+      [ -z "$IMAGE" ] && export IMAGE=$SYSTEM_JOBDISPLAYNAME
+      export RUN_SCRIPT="$BUILD_SOURCESDIRECTORY/src/ci/init_repo.sh . $HOME/rustsrc && src/ci/docker/run.sh $IMAGE"
+      echo "$RUN_SCRIPT"
+      echo "##vso[task.setvariable variable=IMAGE]$IMAGE"
+      echo "##vso[task.setvariable variable=RUN_SCRIPT]$RUN_SCRIPT"
+      echo "##vso[task.setvariable variable=TRAVIS_OS_NAME;]linux"
+    displayName: Prepare run script
+  
+  - script: printenv
+    displayName: Dump env variables (look at IMAGE and RUN_SCRIPT.. and trailing single quote)
+
+  - script: |
+      sudo sh -c 'echo "/checkout/obj/cores/core.%p.%E" > /proc/sys/kernel/core_pattern'
+#    condition: and(succeeded(), eq(variables['Agent.OS'],'Linux'))
+    displayName: Enable core dump
+
+  # TODO: should this step be injected differently since it only applies to one image?
+  - script: |
+      git clone --depth=1 https://github.com/rust-lang-nursery/rust-toolstate.git
+      cd rust-toolstate
+      python2.7 "$BUILD_SOURCESDIRECTORY/src/tools/publish_toolstate.py" "$(git rev-parse HEAD)" "$(git log --format=%s -n1 HEAD)" "" ""
+      cd ..
+      rm -rf rust-toolstate
+    condition: and(succeeded(), eq(variables['IMAGE'],'mingw-check'))
+    displayName: Verify the publish_toolstate script works
+
+  # Log time information from this machine and an external machine for insight into possible
+  # clock drift. Timezones don't matter since relative deltas give all the necessary info.
+  # TODO: see travis.yml --- it does more
+  - script: |
+      date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
+    displayName: check for clock skew before
+
+  # TODO: for whatever reason the value of RUN_SCRIPT ends with a single quote .. why? Should need this substituion logic
+  # TODO: shouldn't need to set CI, TRavis, CI_JOB_NAME, etc here ... how is $IMAGE different from $CI_JOB_NAME?
+  - script: |    
+      echo RUN_SCRIPT="$RUN_SCRIPT"
+      export RUN_SCRIPT="${RUN_SCRIPT//\'}"
+      echo RUN_SCRIPT="$RUN_SCRIPT"
+
+      echo TRAVIS_OS_NAME="$TRAVIS_OS_NAME"
+      export TRAVIS_OS_NAME="${TRAVIS_OS_NAME//\'}"
+      echo TRAVIS_OS_NAME="$TRAVIS_OS_NAME"
+
+      echo IMAGE="$IMAGE"
+      export IMAGE="${IMAGE//\'}"
+      echo IMAGE="$IMAGE"
+
+      echo Emulate for CiEnv
+      export CI="true"
+      export TRAVIS="true"
+      export CI_JOB_NAME="$SYSTEM_JOBDISPLAYNAME"
+
+      export SCCACHE_AZURE_CONNECTION_STRING=$rustlangtools_CONNECTION_STRING
+      export DOCKER_LAYER_CACHE_ACCOUNT_KEY=$rustlangtools_ACCOUNT_KEY
+
+      if [ "$DISABLE_SCCACHE" == "1" ]; then unset SCCACHE_AZURE_CONNECTION_STRING; fi
+
+      printenv | sort | grep -v SCCACHE_AZURE_CONNECTION_STRING
+      printenv | sort | grep -v DOCKER_LAYER_CACHE_ACCOUNT_KEY
+      which sccache
+      stamp sh -x -c "$RUN_SCRIPT"
+    displayName: Run script
+    env:
+      # explicitly decrypt secret variables
+      # see https://docs.microsoft.com/en-us/azure/devops/pipelines/process/variables?view=azure-devops&tabs=yaml%2Cbatch
+      rustlangtools_CONNECTION_STRING: $(rustlangtools_CONNECTION_STRING)
+      rustlangtools_ACCOUNT_KEY: $(rustlangtools_ACCOUNT_KEY)
+
+  - script: |
+      date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
+    displayName: Check for clock skew after

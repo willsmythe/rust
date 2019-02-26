@@ -1,0 +1,40 @@
+# TODO: avoid duplicating common variables
+
+
+variables:
+  # By default schannel checks revocation of certificates unlike some other SSL
+  # backends, but we've historically had problems on CI where a revocation
+  # server goes down presumably. See #43333 for more info
+  CARGO_HTTP_CHECK_REVOKE: false
+  
+  # for sccache to work
+  SCCACHE_STORAGE_ACCOUNT: rustlangtools
+  SCCACHE_AZURE_BLOB_CONTAINER: rust-sccache-1
+
+  # for docker caching
+  DOCKER_LAYER_CACHE_STORAGE_ACCOUNT: rustlangtools
+  DOCKER_LAYER_CACHE_CONTAINER_NAME: docker
+
+# Only trigger on pushes to the "try" branch
+pr: none
+trigger:
+  - try
+
+jobs:
+  - job: Linux
+    timeoutInMinutes: 600
+    pool:
+      vmImage: ubuntu-16.04
+    steps:
+      - template: steps/linux.yml
+    strategy:
+      matrix:
+        dist-x86_64-linux:
+          DEPLOY: 1
+
+        # "alternate" deployments, these are "nightlies" but have LLVM assertions
+        # turned on, they're deployed to a different location primarily for
+        # additional testing.
+        dist-x86_64-linux-alt:
+          IMAGE: dist-x86_64-linux
+          DEPLOY_ALT: 1
