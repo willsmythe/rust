@@ -29,7 +29,7 @@ if [ -f "$docker_dir/$image/Dockerfile" ]; then
       cksum=$(sha512sum $hash_key | \
         awk '{print $1}')
 
-      if [ "$DOCKER_LAYER_CACHE_STORAGE_ACCOUNT" != "" ]; then
+      if [ "$DOCKER_LAYER_CACHE_AZURE_STORAGE_ACCOUNT" != "" ]; then
         # install azcopy
         echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-xenial-prod/ xenial main" > azure.list
         sudo cp ./azure.list /etc/apt/sources.list.d/
@@ -37,8 +37,8 @@ if [ -f "$docker_dir/$image/Dockerfile" ]; then
         sudo apt-get update
         sudo apt-get install azcopy
 
-        url="https://$DOCKER_LAYER_CACHE_STORAGE_ACCOUNT.blob.core.windows.net/$DOCKER_LAYER_CACHE_CONTAINER_NAME/$cksum"
-        upload="azcopy --destination $url --dest-key $DOCKER_LAYER_CACHE_ACCOUNT_KEY"
+        url="https://$DOCKER_LAYER_CACHE_AZURE_STORAGE_ACCOUNT.blob.core.windows.net/$DOCKER_LAYER_CACHE_AZURE_STORAGE_CONTAINER/$cksum"
+        upload="azcopy --destination $url --dest-key $DOCKER_LAYER_CACHE_AZURE_STORAGE_ACCOUNT_KEY"
       else
         s3url="s3://$SCCACHE_BUCKET/docker/$cksum"
         url="https://s3-us-west-1.amazonaws.com/$SCCACHE_BUCKET/docker/$cksum"
