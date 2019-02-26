@@ -25,6 +25,8 @@ jobs:
     timeoutInMinutes: 600
     pool:
       vmImage: ubuntu-16.04
+    variables:
+      TRAVIS_OS_NAME: linux ## TODO
     steps:
       - template: steps/linux.yml
     strategy:

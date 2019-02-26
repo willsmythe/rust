@@ -323,7 +323,8 @@ pub enum CiEnv {
     /// The Travis CI environment, for Linux (including Docker) and macOS builds.
     Travis,
     /// The AppVeyor environment, for Windows builds.
-    AppVeyor,
+    AppVeyor
+    // TODO: AzurePipelines
 }
 
 impl CiEnv {

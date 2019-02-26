@@ -12,6 +12,8 @@ jobs:
       vmImage: ubuntu-16.04
     steps:
       - template: .azure-pipelines-linux.yml
+    variables:
+      TRAVIS_OS_NAME: linux ## TODO
     strategy:
       matrix:
         x86_64-gnu-llvm-6.0:

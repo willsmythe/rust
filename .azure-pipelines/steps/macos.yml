@@ -1,8 +1,6 @@
 steps:
-  - script: |
-      sudo apt install gdb
-    displayName: install gdb
-    condition: and(succeeded(), eq(variables['Agent.OS'],'Linux'))
+  - checkout: self
+    fetchDepth: 2
   
   - script: |
       pip install --user awscli
@@ -10,29 +8,14 @@ steps:
       mkdir -p $HOME/rustsrc
       echo "##vso[task.setvariable variable=PATH;]$PATH"
     displayName:  before_install
-
-  # FIXME(#46924): these two commands are required to enable IPv6,
-  # they shouldn't exist, please revert once more official solutions appeared.
-  # see https://github.com/travis-ci/travis-ci/issues/8891#issuecomment-353403729
-  - script: |
-      echo '{"ipv6":true,"fixed-cidr-v6":"fd9a:8454:6789:13f7::/64"}' | sudo tee /etc/docker/daemon.json
-      sudo service docker restart
-    condition: and(succeeded(), eq(variables['Agent.OS'],'Linux'))
-    displayName: Enable IPv6
-    
-  - script: |
-      curl -fo $HOME/stamp https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror/2017-03-17-stamp-x86_64-unknown-linux-musl
-      chmod +x $HOME/stamp
-      export PATH=$PATH:$HOME
-      echo "##vso[task.setvariable variable=PATH;]$PATH"
-    condition: and(succeeded(), eq(variables['Agent.OS'],'Linux'))
-    displayName: install linux
+   
   - script: |
       brew update
       brew install xz
       brew install swig
-    condition: and(succeeded(), and(eq(variables['Agent.OS'],'Darwin'), eq(variables['RUST_CHECK_TARGET'],'dist')))
-    displayName: install osx - brew install xz and swig
+    condition: and(succeeded(), eq(variables['RUST_CHECK_TARGET'],'dist'))
+    displayName: brew install xz and swig
+
   - script: |
       echo Use sccache built with Azure Storage support
       curl -fo /usr/local/bin/sccache https://rustlangtools.blob.core.windows.net/public/stable-x86_64-apple-darwin.sccache
@@ -46,7 +29,6 @@ steps:
       echo "##vso[task.setvariable variable=CXX;]$CXX"
       export AR=ar
       echo "##vso[task.setvariable variable=AR;]$AR"
-    condition: and(succeeded(), eq(variables['Agent.OS'],'Darwin'))
     displayName: install osx
   
   - script: |
@@ -61,25 +43,9 @@ steps:
       echo "$RUN_SCRIPT"
       echo "##vso[task.setvariable variable=RUN_SCRIPT]$RUN_SCRIPT"
       echo "##vso[task.setvariable variable=TRAVIS_OS_NAME;]osx"
-    condition: and(succeeded(), eq(variables['Agent.OS'],'Darwin'))
     displayName: prepare run script for osx
 
-  - script: |
-      set -x
-      [ -z "$IMAGE" ] && export IMAGE=$SYSTEM_JOBDISPLAYNAME
-      export RUN_SCRIPT="$BUILD_SOURCESDIRECTORY/src/ci/init_repo.sh . $HOME/rustsrc && src/ci/docker/run.sh $IMAGE"
-      echo "$RUN_SCRIPT"
-      echo "##vso[task.setvariable variable=IMAGE]$IMAGE"
-      echo "##vso[task.setvariable variable=RUN_SCRIPT]$RUN_SCRIPT"
-      echo "##vso[task.setvariable variable=TRAVIS_OS_NAME;]linux"
-    condition: and(succeeded(), eq(variables['Agent.OS'],'Linux'))
-    displayName: prepare run script for linux
-  
-  - script: |
-      sudo sh -c 'echo "/checkout/obj/cores/core.%p.%E" > /proc/sys/kernel/core_pattern'
-    condition: and(succeeded(), eq(variables['Agent.OS'],'Linux'))
-    displayName: Enable core dump on Linux
-
+  # TODO: pull this into a separate step file?
   - script: |
       git clone --depth=1 https://github.com/rust-lang-nursery/rust-toolstate.git
       cd rust-toolstate
@@ -95,6 +61,7 @@ steps:
       date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
     displayName: check for clock skew before
 
+  # TODO: pull this into a separate step
   - script: |
       echo RUN_SCRIPT="$RUN_SCRIPT"
       export RUN_SCRIPT="${RUN_SCRIPT//\'}"
