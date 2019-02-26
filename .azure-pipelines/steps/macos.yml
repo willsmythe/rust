@@ -1,6 +1,4 @@
 steps:
-  - template: .azure-pipelines-linux.yml
-
   - script: |
       sudo apt install gdb
     displayName: install gdb
