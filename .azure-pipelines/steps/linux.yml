@@ -24,7 +24,7 @@ steps:
 - bash: |
     echo "Job display name: $SYSTEM_JOBDISPLAYNAME"
     [ -z "$IMAGE" ] && export IMAGE=$SYSTEM_JOBDISPLAYNAME
-    export RUN_SCRIPT="$BUILD_SOURCESDIRECTORY/src/ci/init_repo.sh . $HOME/rustsrc && src/ci/docker/run.sh $IMAGE"    
+    export RUN_SCRIPT="$BUILD_SOURCESDIRECTORY/src/ci/init_repo.sh . $HOME/rustsrc && src/ci/docker/run.sh $IMAGE"
     echo "##vso[task.setvariable variable=IMAGE]$IMAGE"
     echo "##vso[task.setvariable variable=RUN_SCRIPT]$RUN_SCRIPT"
   displayName: Prepare run script
