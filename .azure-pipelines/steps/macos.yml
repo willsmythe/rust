@@ -3,8 +3,6 @@ steps:
   fetchDepth: 2
 
 - script: |
-    set -e
-
     pip install --user awscli
 
     export PATH=$PATH:$HOME/.local/bin:$HOME/Library/Python/2.7/bin/
