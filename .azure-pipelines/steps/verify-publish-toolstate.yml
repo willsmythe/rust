@@ -1,5 +1,5 @@
 steps:
-- script: |
+- bash: |
     git clone --depth=1 https://github.com/rust-lang-nursery/rust-toolstate.git
     cd rust-toolstate
     python2.7 "$BUILD_SOURCESDIRECTORY/src/tools/publish_toolstate.py" "$(git rev-parse HEAD)" "$(git log --format=%s -n1 HEAD)" "" ""

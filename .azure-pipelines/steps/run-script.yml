@@ -1,7 +1,13 @@
 steps:
-# TODO: for whatever reason the value of RUN_SCRIPT ends with a single quote .. why? Should need this substituion logic
-# TODO: shouldn't need to set CI, TRavis, CI_JOB_NAME, etc here ... how is $IMAGE different from $CI_JOB_NAME?
-- script: |    
+# Log time information from this machine and an external machine for insight into possible
+# clock drift. Timezones don't matter since relative deltas give all the necessary info.
+- bash: |
+    date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
+  displayName: Log time information (before)
+
+# FIXME: for whatever reason the value of RUN_SCRIPT ends with a single quote .. why? Should need this substituion logic
+# FIXME: shouldn't need to set CI, TRavis, CI_JOB_NAME, etc here ... how is $IMAGE different from $CI_JOB_NAME?
+- bash: |    
     echo RUN_SCRIPT="$RUN_SCRIPT"
     export RUN_SCRIPT="${RUN_SCRIPT//\'}"
     echo RUN_SCRIPT="$RUN_SCRIPT"
@@ -16,18 +22,20 @@ steps:
   
     if [ "$DISABLE_SCCACHE" == "1" ]; then unset SCCACHE_AZURE_CONNECTION_STRING; fi
 
-    printenv | sort
     which sccache
-    
+
     stamp sh -x -c "$RUN_SCRIPT"
   env:
     CI: true
-    TRAVIS: true # TODO
+    TRAVIS: true # FIXME
     CI_JOB_NAME: $(System.JobDisplayName)
-    TRAVIS_BRANCH: $(Build.SourceBranchName)
-
-    # explicitly decrypt secret variables
-    # see https://docs.microsoft.com/en-us/azure/devops/pipelines/process/variables?view=azure-devops&tabs=yaml%2Cbatch
+    TRAVIS_BRANCH: $(Build.SourceBranchName) # FIXME
+    # Explicitly decrypt secret variables
+    # See https://docs.microsoft.com/azure/devops/pipelines/process/variables?view=azure-devops&tabs=yaml%2Cbatch#secret-variables
     SCCACHE_AZURE_CONNECTION_STRING: $(SCCACHE_AZURE_CONNECTION_STRING_SECRET)
     DOCKER_LAYER_CACHE_AZURE_STORAGE_ACCOUNT_KEY: $(DOCKER_LAYER_CACHE_AZURE_STORAGE_ACCOUNT_KEY_SECRET)
   displayName: Run script
+
+- bash: |
+    date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
+  displayName: Log time information (after)
