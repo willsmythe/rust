@@ -3,9 +3,12 @@ steps:
   fetchDepth: 2
 
 - script: |
+    sudo apt install gdb
+  displayName: Install GDB
+
+- script: |
     set -e
 
-    sudo apt install gdb
     pip install --user awscli            
         
     curl -fo $HOME/stamp https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror/2017-03-17-stamp-x86_64-unknown-linux-musl
