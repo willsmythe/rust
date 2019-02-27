@@ -2,7 +2,8 @@ steps:
 - checkout: self
   fetchDepth: 2
 
-- script: printenv | sort
+- script: |
+    printenv | sort
   displayName: Dump environment variables
 
 - script: |
