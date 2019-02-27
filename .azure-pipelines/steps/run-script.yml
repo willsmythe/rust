@@ -16,9 +16,9 @@ steps:
   
     if [ "$DISABLE_SCCACHE" == "1" ]; then unset SCCACHE_AZURE_CONNECTION_STRING; fi
 
-    printenv | sort | grep -v SCCACHE_AZURE_CONNECTION_STRING
-    printenv | sort | grep -v DOCKER_LAYER_CACHE_AZURE_STORAGE_ACCOUNT_KEY
+    printenv | sort
     which sccache
+    
     stamp sh -x -c "$RUN_SCRIPT"
   env:
     CI: true

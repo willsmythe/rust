@@ -3,17 +3,7 @@
 # 
 
 variables:
-  # By default schannel checks revocation of certificates unlike some other SSL
-  # backends, but we've historically had problems on CI where a revocation
-  # server goes down presumably. See #43333 for more info
-  CARGO_HTTP_CHECK_REVOKE: false
-  
-  # for sccache (requires the SCCACHE_AZURE_CONNECTION_STRING_SECRET secret variable to be set)
-  SCCACHE_AZURE_BLOB_CONTAINER: rust-sccache
-
-  # for docker caching (also requires the DOCKER_LAYER_CACHE_AZURE_STORAGE_ACCOUNT_KEY_SECRET secret variable to be set)
-  DOCKER_LAYER_CACHE_AZURE_STORAGE_ACCOUNT: rustlangtools
-  DOCKER_LAYER_CACHE_AZURE_STORAGE_CONTAINER: rust-docker
+- group: caching
 
 pr: none
 trigger:
