@@ -1,11 +1,10 @@
 #
-# Job to publish toolstate. Only triggered on pushes to master.
+# Azure Pipelines job to publish toolstate. Only triggers on pushes to master.
 #
 
-# Only trigger on pushes to the "master" branch
 pr: none
 trigger:
-  - master
+- master
 
 pool:
   vmImage: ubuntu-16.04
