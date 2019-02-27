@@ -1,5 +1,5 @@
 steps:
-- script: |
+- bash: |
     df -h
     du . | sort -nr | head -n100
   displayName: Show disk usage

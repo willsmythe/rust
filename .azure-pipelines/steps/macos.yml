@@ -2,7 +2,9 @@ steps:
 - checkout: self
   fetchDepth: 2
 
-- script: |
+- template: show-disk-usage.yml
+
+- bash: |
     pip install --user awscli
 
     export PATH=$PATH:$HOME/.local/bin:$HOME/Library/Python/2.7/bin/
@@ -25,36 +27,26 @@ steps:
     
     echo "##vso[task.setvariable variable=AR]$ar"
 
-    # TODO: fix
+    # FIXME: fix
     echo "##vso[task.setvariable variable=TRAVIS_OS_NAME]osx"
   displayName: Prep
   
-- script: |
+- bash: |
     brew update
     brew install xz
     brew install swig
   condition: and(succeeded(), eq(variables['RUST_CHECK_TARGET'],'dist'))
-  displayName: brew install xz and swig
+  displayName: Install xz and swigw
 
-- template: show-disk-usage.yml
-
-- script: |
+- bash: |
     set -x
     export RUN_SCRIPT="$BUILD_SOURCESDIRECTORY/src/ci/init_repo.sh . $HOME/rustsrc && src/ci/run.sh && sccache --show-stats"
     echo "$RUN_SCRIPT"
     echo "##vso[task.setvariable variable=RUN_SCRIPT]$RUN_SCRIPT"
   displayName: Prepare run script
 
+- template: show-environment-variables.yml
+
 - template: verify-publish-toolstate.yml
 
-# Log time information from this machine and an external machine for insight into possible
-# clock drift. Timezones don't matter since relative deltas give all the necessary info.
-- script: |
-    date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
-  displayName: check for clock skew before
-
 - template: run-script.yml
-
-- script: |
-    date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
-  displayName: check for clock skew after
