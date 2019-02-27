@@ -1,81 +1,66 @@
 steps:
-  - checkout: self
-    fetchDepth: 2
+- checkout: self
+  fetchDepth: 2
 
-  - script: sudo apt install gdb
-    displayName: Install GDB
-  
-  # TODO: need to install the AWS CLI here? What is rustsrc used for?   
-  - script: |
-      pip install --user awscli
-      export PATH=$PATH:$HOME/.local/bin:$HOME/Library/Python/2.7/bin/
-      mkdir -p $HOME/rustsrc
-      echo "##vso[task.setvariable variable=PATH;]$PATH"
-    displayName:  Prep (before_install)
+- script: |
+    set -e
 
-  # TODO: comment out for now ... not sure Azure Pipelines has this problem
-  # FIXME(#46924): these two commands are required to enable IPv6,
-  # they shouldn't exist, please revert once more official solutions appeared.
-  # see https://github.com/travis-ci/travis-ci/issues/8891#issuecomment-353403729
-  #- script: |
-  #    echo '{"ipv6":true,"fixed-cidr-v6":"fd9a:8454:6789:13f7::/64"}' | sudo tee /etc/docker/daemon.json
-  #    sudo service docker restart
-  #  condition: and(succeeded(), eq(variables['Agent.OS'],'Linux'))
-  #  displayName: Enable IPv6
+    sudo apt install gdb
+    pip install --user awscli            
+        
+    curl -fo $HOME/stamp https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror/2017-03-17-stamp-x86_64-unknown-linux-musl
+    chmod +x $HOME/stamp
     
-  # TODO: can this go in the step above? think so .. avoids having to come up with a name for it
-  - script: |
-      curl -fo $HOME/stamp https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror/2017-03-17-stamp-x86_64-unknown-linux-musl
-      chmod +x $HOME/stamp
-      export PATH=$PATH:$HOME
-      echo "##vso[task.setvariable variable=PATH;]$PATH"
-#    condition: and(succeeded(), eq(variables['Agent.OS'],'Linux'))
-    displayName: Add stamp
+    export PATH=$PATH:$HOME/.local/bin:$HOME/Library/Python/2.7/bin/:$HOME
+    echo "##vso[task.setvariable variable=PATH;]$PATH"
 
-#  - script: |
-#      echo "#### Disk usage before running script:"
-#      df -h
-#      du . | sort -nr | head -n100
-#    displayName: check disk usage
+    mkdir -p $HOME/rustsrc
 
-  # TODO: Usng the job display name feels brittle. Is there a different varibale representing the current matrix entry name?
-  # TODO: should update the 2 scripts that look for TRAVIS_OS_NAME (look for AGENT_OS too)
-  - script: |
-      echo "Job display name: $SYSTEM_JOBDISPLAYNAME"
-      set -x
-      [ -z "$IMAGE" ] && export IMAGE=$SYSTEM_JOBDISPLAYNAME
-      export RUN_SCRIPT="$BUILD_SOURCESDIRECTORY/src/ci/init_repo.sh . $HOME/rustsrc && src/ci/docker/run.sh $IMAGE"
-      echo "$RUN_SCRIPT"
-      echo "##vso[task.setvariable variable=IMAGE]$IMAGE"
-      echo "##vso[task.setvariable variable=RUN_SCRIPT]$RUN_SCRIPT"
-      # echo "##vso[task.setvariable variable=TRAVIS_OS_NAME;]linux"
-    displayName: Prepare run script
+    # TODO: fix
+    echo "##vso[task.setvariable variable=TRAVIS_OS_NAME]linux"
+  displayName:  Prep
+
+# TODO: comment out for now ... not sure Azure Pipelines has this problem
+# FIXME(#46924): these two commands are required to enable IPv6,
+# they shouldn't exist, please revert once more official solutions appeared.
+# see https://github.com/travis-ci/travis-ci/issues/8891#issuecomment-353403729
+#- script: |
+#    echo '{"ipv6":true,"fixed-cidr-v6":"fd9a:8454:6789:13f7::/64"}' | sudo tee /etc/docker/daemon.json
+#    sudo service docker restart
+#  condition: and(succeeded(), eq(variables['Agent.OS'],'Linux'))
+#  displayName: Enable IPv6
   
-  - script: printenv
-    displayName: Dump env variables (look at IMAGE and RUN_SCRIPT.. and trailing single quote)
+- template: show-disk-usage.yml
 
-  - script: |
-      sudo sh -c 'echo "/checkout/obj/cores/core.%p.%E" > /proc/sys/kernel/core_pattern'
-#    condition: and(succeeded(), eq(variables['Agent.OS'],'Linux'))
-    displayName: Enable core dump
+# TODO: Usng the job display name feels brittle. Is there a different varibale representing the current matrix entry name?
+# TODO: should update the 2 scripts that look for TRAVIS_OS_NAME (look for AGENT_OS too)
+- script: |
+    echo "Job display name: $SYSTEM_JOBDISPLAYNAME"
+    [ -z "$IMAGE" ] && export IMAGE=$SYSTEM_JOBDISPLAYNAME
+    export RUN_SCRIPT="$BUILD_SOURCESDIRECTORY/src/ci/init_repo.sh . $HOME/rustsrc && src/ci/docker/run.sh $IMAGE"
+    echo "$RUN_SCRIPT"
+    echo "##vso[task.setvariable variable=IMAGE]$IMAGE"
+    echo "##vso[task.setvariable variable=RUN_SCRIPT]$RUN_SCRIPT"
+  displayName: Prepare run script
 
-  # TODO: should this step be injected differently since it only applies to one image?
-  - script: |
-      git clone --depth=1 https://github.com/rust-lang-nursery/rust-toolstate.git
-      cd rust-toolstate
-      python2.7 "$BUILD_SOURCESDIRECTORY/src/tools/publish_toolstate.py" "$(git rev-parse HEAD)" "$(git log --format=%s -n1 HEAD)" "" ""
-      cd ..
-      rm -rf rust-toolstate
-    condition: and(succeeded(), eq(variables['IMAGE'],'mingw-check'))
-    displayName: Verify the publish_toolstate script works
+- script: printenv
+  displayName: Dump env variables (look at IMAGE and RUN_SCRIPT.. and trailing single quote)
 
-  # Log time information from this machine and an external machine for insight into possible
-  # clock drift. Timezones don't matter since relative deltas give all the necessary info.
-  # TODO: see travis.yml --- it does more
-  - script: |
-      date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
-    displayName: check for clock skew before
+- script: |
+    sudo sh -c 'echo "/checkout/obj/cores/core.%p.%E" > /proc/sys/kernel/core_pattern'
+  displayName: Enable core dump
 
-  - script: |
-      date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
-    displayName: Check for clock skew after
+- template: verify-publish-toolstate.yml
+
+# Log time information from this machine and an external machine for insight into possible
+# clock drift. Timezones don't matter since relative deltas give all the necessary info.
+# TODO: see travis.yml --- it does more
+- script: |
+    date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
+  displayName: check for clock skew before
+
+- template: run-script.yml
+
+- script: |
+    date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
+  displayName: Check for clock skew after

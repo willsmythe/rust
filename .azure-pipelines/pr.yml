@@ -1,6 +1,10 @@
 #
-# Azure Pipelines "try" branch build for Rust
+# Azure Pipelines pull request build for Rust
 # 
+
+trigger: none
+pr:
+- master # TODO: really just want any branch, but want an explicit "pr" property set so it's clear
 
 variables:
   # By default schannel checks revocation of certificates unlike some other SSL
@@ -15,27 +19,21 @@ variables:
   DOCKER_LAYER_CACHE_AZURE_STORAGE_ACCOUNT: rustlangtools
   DOCKER_LAYER_CACHE_AZURE_STORAGE_CONTAINER: rust-docker
 
-pr: none
-trigger:
-- try
-
 jobs:
 - job: Linux
-  timeoutInMinutes: 300
+  timeoutInMinutes: 600
   pool:
     vmImage: ubuntu-16.04
-  variables:
-    TRAVIS_OS_NAME: linux ## TODO
+  steps:
+    - template: steps/linux.yml
   strategy:
     matrix:
-      dist-x86_64-linux:
-        DEPLOY: 1
+      x86_64-gnu-llvm-6.0:
+        RUST_BACKTRACE: 1
 
-      # "alternate" deployments, these are "nightlies" but have LLVM assertions
-      # turned on, they're deployed to a different location primarily for
-      # additional testing.
-      dist-x86_64-linux-alt:
-        IMAGE: dist-x86_64-linux
-        DEPLOY_ALT: 1
-  steps:
-  - template: steps/linux.yml
+      x86_64-gnu-tools:
+        DEPLOY: 0
+      # if: branch = auto OR (type = pull_request AND commit_message =~ /(?i:^update.*\b(rls|rustfmt|clippy|miri|cargo)\b)/)
+
+      mingw-check:
+        DEPLOY: 0

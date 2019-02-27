@@ -29,8 +29,6 @@ jobs:
   timeoutInMinutes: 600
   pool:
     vmImage: ubuntu-16.04
-  variables:
-    TRAVIS_OS_NAME: linux ## TODO
   steps:
   - template: steps/linux.yml
   strategy:
@@ -159,8 +157,6 @@ jobs:
   timeoutInMinutes: 600
   pool:
     vmImage: macos-10.13
-  variables:
-    TRAVIS_OS_NAME: osx ## TODO
   steps:
   - template: steps/macos.yml  
   strategy:

@@ -1,101 +1,62 @@
 steps:
-  - checkout: self
-    fetchDepth: 2
+- checkout: self
+  fetchDepth: 2
+
+- script: |
+    set -e
+
+    pip install --user awscli
+
+    export PATH=$PATH:$HOME/.local/bin:$HOME/Library/Python/2.7/bin/
+    mkdir -p $HOME/rustsrc    
+    echo "##vso[task.setvariable variable=PATH;]$PATH"
+
+    curl -fo /usr/local/bin/sccache https://rustlangtools.blob.core.windows.net/public/stable-x86_64-apple-darwin.sccache
+    chmod +x /usr/local/bin/sccache
+
+    curl -fo /usr/local/bin/stamp https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror/2017-03-17-stamp-x86_64-apple-darwin
+    chmod +x /usr/local/bin/stamp
+    
+    curl -f http://releases.llvm.org/7.0.0/clang+llvm-7.0.0-x86_64-apple-darwin.tar.xz | tar xJf - 
+    
+    export CC=`pwd`/clang+llvm-7.0.0-x86_64-apple-darwin/bin/clang
+    echo "##vso[task.setvariable variable=CC]$CC"
+    
+    export CXX=`pwd`/clang+llvm-7.0.0-x86_64-apple-darwin/bin/clang++
+    echo "##vso[task.setvariable variable=CXX]$CXX"
+    
+    echo "##vso[task.setvariable variable=AR]$ar"
+
+    # TODO: fix
+    echo "##vso[task.setvariable variable=TRAVIS_OS_NAME]osx"
+  displayName: Prep
   
-  - script: |
-      pip install --user awscli
-      export PATH=$PATH:$HOME/.local/bin:$HOME/Library/Python/2.7/bin/
-      mkdir -p $HOME/rustsrc
-      echo "##vso[task.setvariable variable=PATH;]$PATH"
-    displayName:  before_install
-   
-  - script: |
-      brew update
-      brew install xz
-      brew install swig
-    condition: and(succeeded(), eq(variables['RUST_CHECK_TARGET'],'dist'))
-    displayName: brew install xz and swig
+- script: |
+    brew update
+    brew install xz
+    brew install swig
+  condition: and(succeeded(), eq(variables['RUST_CHECK_TARGET'],'dist'))
+  displayName: brew install xz and swig
 
-  - script: |
-      echo Use sccache built with Azure Storage support
-      curl -fo /usr/local/bin/sccache https://rustlangtools.blob.core.windows.net/public/stable-x86_64-apple-darwin.sccache
-      chmod +x /usr/local/bin/sccache
-      curl -fo /usr/local/bin/stamp https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror/2017-03-17-stamp-x86_64-apple-darwin
-      chmod +x /usr/local/bin/stamp
-      curl -f http://releases.llvm.org/7.0.0/clang+llvm-7.0.0-x86_64-apple-darwin.tar.xz | tar xJf - 
-      export CC=`pwd`/clang+llvm-7.0.0-x86_64-apple-darwin/bin/clang
-      echo "##vso[task.setvariable variable=CC;]$CC"
-      export CXX=`pwd`/clang+llvm-7.0.0-x86_64-apple-darwin/bin/clang++
-      echo "##vso[task.setvariable variable=CXX;]$CXX"
-      export AR=ar
-      echo "##vso[task.setvariable variable=AR;]$AR"
-    displayName: install osx
-  
-  - script: |
-      echo "#### Disk usage before running script:"
-      df -h
-      du . | sort -nr | head -n100
-    displayName: check disk usage
+- template: show-disk-usage.yml
 
-  - script: |
-      set -x
-      export RUN_SCRIPT="$BUILD_SOURCESDIRECTORY/src/ci/init_repo.sh . $HOME/rustsrc && src/ci/run.sh && sccache --show-stats"
-      echo "$RUN_SCRIPT"
-      echo "##vso[task.setvariable variable=RUN_SCRIPT]$RUN_SCRIPT"
-      echo "##vso[task.setvariable variable=TRAVIS_OS_NAME;]osx"
-    displayName: prepare run script for osx
+- script: |
+    set -x
+    export RUN_SCRIPT="$BUILD_SOURCESDIRECTORY/src/ci/init_repo.sh . $HOME/rustsrc && src/ci/run.sh && sccache --show-stats"
+    echo "$RUN_SCRIPT"
+    echo "##vso[task.setvariable variable=RUN_SCRIPT]$RUN_SCRIPT"
+  displayName: Prepare run script
 
-  # TODO: pull this into a separate step file?
-  - script: |
-      git clone --depth=1 https://github.com/rust-lang-nursery/rust-toolstate.git
-      cd rust-toolstate
-      python2.7 "$BUILD_SOURCESDIRECTORY/src/tools/publish_toolstate.py" "$(git rev-parse HEAD)" "$(git log --format=%s -n1 HEAD)" "" ""
-      cd ..
-      rm -rf rust-toolstate
-    condition: and(succeeded(), eq(variables['IMAGE'],'mingw-check'))
-    displayName: verify the publish_toolstate script works
+- template: verify-publish-toolstate.yml
 
-  # Log time information from this machine and an external machine for insight into possible
-  # clock drift. Timezones don't matter since relative deltas give all the necessary info.
-  - script: |
-      date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
-    displayName: check for clock skew before
+# Log time information from this machine and an external machine for insight into possible
+# clock drift. Timezones don't matter since relative deltas give all the necessary info.
+- script: |
+    date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
+  displayName: check for clock skew before
 
-  # TODO: pull this into a separate step
-  - script: |
-      echo RUN_SCRIPT="$RUN_SCRIPT"
-      export RUN_SCRIPT="${RUN_SCRIPT//\'}"
-      echo RUN_SCRIPT="$RUN_SCRIPT"
+- template: run-script.yml
 
-      echo TRAVIS_OS_NAME="$TRAVIS_OS_NAME"
-      export TRAVIS_OS_NAME="${TRAVIS_OS_NAME//\'}"
-      echo TRAVIS_OS_NAME="$TRAVIS_OS_NAME"
-
-      echo IMAGE="$IMAGE"
-      export IMAGE="${IMAGE//\'}"
-      echo IMAGE="$IMAGE"
-
-      echo Emulate for CiEnv
-      export CI="true"
-      export TRAVIS="true"
-      export CI_JOB_NAME="$SYSTEM_JOBDISPLAYNAME"
-
-      export SCCACHE_AZURE_CONNECTION_STRING=$rustlangtools_CONNECTION_STRING
-      export DOCKER_LAYER_CACHE_ACCOUNT_KEY=$rustlangtools_ACCOUNT_KEY
-
-      if [ "$DISABLE_SCCACHE" == "1" ]; then unset SCCACHE_AZURE_CONNECTION_STRING; fi
-
-      printenv | sort | grep -v SCCACHE_AZURE_CONNECTION_STRING
-      printenv | sort | grep -v DOCKER_LAYER_CACHE_ACCOUNT_KEY
-      which sccache
-      stamp sh -x -c "$RUN_SCRIPT"
-    displayName: run script
-    env:
-      # explicitly decrypt secret variables
-      # see https://docs.microsoft.com/en-us/azure/devops/pipelines/process/variables?view=azure-devops&tabs=yaml%2Cbatch
-      rustlangtools_CONNECTION_STRING: $(rustlangtools_CONNECTION_STRING)
-      rustlangtools_ACCOUNT_KEY: $(rustlangtools_ACCOUNT_KEY)
-
-  - script: |
-      date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
-    displayName: check for clock skew after
+- script: |
+    date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
+  displayName: check for clock skew after
