@@ -3,28 +3,6 @@ steps:
   fetchDepth: 2
 
 - script: |
-    echo on
-    taskkill /f /im sccache.exe
-    if EXIST "%USERPROFILE%\.cargo" rmdir /s /q %USERPROFILE%\.cargo
-    if EXIST "%USERPROFILE%\.cargo" rmdir /s /q %USERPROFILE%\.cargo
-    if EXIST "%LOCALAPPDATA%\Mozilla\sccache" rmdir /s /q "%LOCALAPPDATA%\Mozilla\sccache"
-    if EXIST "%LOCALAPPDATA%\Mozilla\sccache" rmdir /s /q "%LOCALAPPDATA%\Mozilla\sccache"
-    git config --system core.longpaths true
-    git clean -xdf
-    git clean -xdf
-    git config --system core.longpaths false
-  displayName: ensure clean state
-
-- script: |
-    echo ON
-    IF NOT "%HOST_IMAGE%"=="vs2017-win2016" choco install 7zip.install -y
-    set PATH=%PATH%;C:\Program Files\7-Zip
-    echo ##vso[task.setvariable variable=PATH;]%PATH%
-    7z
-  displayName: Add 7-zip to path
-
-- script: |
-    @echo on
     choco install msys2 --params="/InstallDir:C:\msys64 /NoPath" -y
     set PATH=C:\msys64\usr\bin;%PATH%
     pacman -S --noconfirm --needed base-devel ca-certificates make diffutils tar 
@@ -35,7 +13,9 @@ steps:
     where rev
     rev --help
     where make
-  displayName: install msys2
+
+    echo ##vso[task.prependpath]C:\msys64\usr\bin
+  displayName: Install msys2
 
 # If we need to download a custom MinGW, do so here and set the path
 # appropriately.
@@ -46,11 +26,9 @@ steps:
 # move `C:\Python27` ahead in PATH and then also make sure the `python2.7.exe`
 # file exists in there (which it doesn't by default).
 - script: |
-    echo ON
     powershell -Command "iwr -outf %MINGW_ARCHIVE% %MINGW_URL%/%MINGW_ARCHIVE%"
     7z x -y %MINGW_ARCHIVE% > nul
-    set PATH=%CD%\%MINGW_DIR%\bin;C:\msys64\usr\bin;%PATH%
-    echo ##vso[task.setvariable variable=PATH;]%PATH%
+    echo ##vso[task.prependpath]%CD%\%MINGW_DIR%\bin
   condition: and(succeeded(), ne(variables['MINGW_URL'],''))
   displayName: Download custom MinGW
 
@@ -65,11 +43,10 @@ steps:
 # Original downloaded here came from
 # http://releases.llvm.org/7.0.0/LLVM-7.0.0-win64.exe
 - script: |
-    echo ON
     powershell -Command "iwr -outf LLVM-7.0.0-win64.exe https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror/LLVM-7.0.0-win64.exe"
     .\LLVM-7.0.0-win64.exe /S /NCRC /D=C:\clang-rust
     set RUST_CONFIGURE_ARGS=%RUST_CONFIGURE_ARGS% --set llvm.clang-cl=C:\clang-rust\bin\clang-cl.exe
-    echo ##vso[task.setvariable variable=RUST_CONFIGURE_ARGS;]%RUST_CONFIGURE_ARGS%
+    echo ##vso[task.setvariable variable=RUST_CONFIGURE_ARGS]%RUST_CONFIGURE_ARGS%
   condition: and(succeeded(), eq(variables['MINGW_URL'],''))
   displayName: Download clang
 
@@ -99,87 +76,53 @@ steps:
 
 # Otherwise pull in the MinGW installed on appveyor
 - script: |
-    echo ON
     echo Find mingw
     set PATH | findstr /i msys
     set PATH | findstr /i mingw
-    set PATH=C:\msys64\mingw%MSYS_BITS%\bin;C:\msys64\usr\bin;%PATH%
-    echo ##vso[task.setvariable variable=PATH;]%PATH%
+    echo ##vso[task.prependpath]C:\msys64\mingw%MSYS_BITS%\bin
   condition: and(succeeded(), eq(variables['MINGW_URL'],''))
   displayName: Add MinGW to path
 
 - script: |
-    echo ON
     copy C:\Python27amd64\python.exe C:\Python27amd64\python2.7.exe
-    set PATH=C:\Python27amd64;%PATH%
-    echo ##vso[task.setvariable variable=PATH;]%PATH%
+    echo ##vso[task.prependpath]C:\Python27amd64
   displayName: Prefer the "native" Python as LLVM has trouble building with MSYS sometimes
 
 - script: |
-    echo ON
-    echo Use Sccache built with Azure Storage support
-    powershell -Command "iwr -outf sccache.exe https://rustlangtools.blob.core.windows.net/public/stable-x86_64-pc-windows-msvc.sccache.exe"
-    set PATH=%PATH%;%CD%
-    where sccache
-    echo ##vso[task.setvariable variable=PATH;]%PATH%
+    md sccache
+    powershell -Command "iwr -outf sccache\sccache.exe https://rustlangtools.blob.core.windows.net/public/stable-x86_64-pc-windows-msvc.sccache.exe"
+    echo ##vso[task.prependpath]%CD%\sccache
   displayName: Download and install sccache
 
 # Note that this is originally from the github releases patch of Ninja
 - script: |
-    echo ON
+    md ninja
     powershell -Command "iwr -outf 2017-03-15-ninja-win.zip https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror/2017-03-15-ninja-win.zip"
-    7z x 2017-03-15-ninja-win.zip
+    7z x -oninja 2017-03-15-ninja-win.zip
     set RUST_CONFIGURE_ARGS=%RUST_CONFIGURE_ARGS% --enable-ninja
-    echo ##vso[task.setvariable variable=RUST_CONFIGURE_ARGS;]%RUST_CONFIGURE_ARGS%
-    REM - set PATH=%PATH%;%CD% -- this already happens above for sccache
+    echo ##vso[task.setvariable variable=RUST_CONFIGURE_ARGS]%RUST_CONFIGURE_ARGS%
+    echo ##vso[task.prependpath]%CD%\ninja
   displayName: Download and install ninja
 
 - script: |
-    echo ON
-    powershell -Command "iwr -outf 2017-08-22-is.exe https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror/2017-08-22-is.exe"
-    2017-08-22-is.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-
-    set PATH=C:\Program Files (x86)\Inno Setup 5;%PATH%
-    echo ##vso[task.setvariable variable=PATH;]%PATH%
-  displayName: Install InnoSetup to get `iscc` used to produce installers
-
-- script: |
-    echo ON
-    powershell -Command "iwr -outf 2017-05-15-Handle.zip https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror/2017-05-15-Handle.zip"
     mkdir handle
+    powershell -Command "iwr -outf 2017-05-15-Handle.zip https://s3-us-west-1.amazonaws.com/rust-lang-ci2/rust-ci-mirror/2017-05-15-Handle.zip"
     7z x -ohandle 2017-05-15-Handle.zip
     set PATH=%PATH%;%CD%\handle
     handle.exe -accepteula -help
-    echo ##vso[task.setvariable variable=PATH;]%PATH%
-  displayName: Help debug some handle issues on AppVeyor
+    echo ##vso[task.setvariable variable=PATH]%PATH%
+  displayName: Help debug handle issues
+
+- template: show-environment-variables.yml
 
 - script: |
-    echo ON
-
-    REM echo Emulate for CiEnv
-    REM set CI=true
-    REM set APPVEYOR=True
-    REM set CI_JOB_NAME=%SYSTEM_JOBDISPLAYNAME%
-
-    REM echo Since we only need rev for a doc-build, just make a fake one as installing
-    REM echo msys2 caused more trouble
-    REM echo https://github.com/johnterickson/rust/issues/5
-    REM copy /y %WINDIR%\system32\PING.EXE rev.exe
-    REM other doc-builds require a working rev
-    REM https://github.com/rust-lang/rust/blob/79d8a0fcefa5134db2a94739b1d18daa01fc6e9f/src/libstd/process.rs line 1056
-
     REM echo force the specific VS version https://github.com/johnterickson/rust/issues/8
     IF "%VCVARS_BAT%" NEQ "" ( 
       CALL "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\%VCVARS_BAT%"
     )
 
-    set SCCACHE_AZURE_CONNECTION_STRING_VAR_NAME=%SCCACHE_STORAGE_ACCOUNT%_CONNECTION_STRING
-    for /f "delims=" %%x IN ('echo %%%SCCACHE_AZURE_CONNECTION_STRING_VAR_NAME%%%') DO (set SCCACHE_AZURE_CONNECTION_STRING=%%x)
-
     if "%DISABLE_SCCACHE%"=="1" ( set SCCACHE_AZURE_CONNECTION_STRING= )
 
-    echo Check enviornment
-    set PATH
-    set RUST_CONFIGURE_ARGS
     where sccache
     where rev
     set | findstr /v SCCACHE_AZURE_CONNECTION_STRING
@@ -189,12 +132,11 @@ steps:
     mklink /J build c:\MORE_SPACE
 
     if not exist D:\cache\rustsrc\NUL mkdir D:\cache\rustsrc
+    
     sh src/ci/init_repo.sh . /d/cache/rustsrc
     set SRC=.
     set NO_CCACHE=1
 
-    echo if this fails, it may have been because of a full disk.
-    echo dump the drive to see what's taking up space
     sh src/ci/run.sh && sccache --show-stats
   env:      
     CI: true
