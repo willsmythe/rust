@@ -2,6 +2,9 @@ steps:
 - checkout: self
   fetchDepth: 2
 
+- script: printenv | sort
+  displayName: Dump environment variables
+
 - script: |
     sudo apt install gdb
   displayName: Install GDB
