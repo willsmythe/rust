@@ -30,6 +30,10 @@ steps:
     TRAVIS: true # FIXME
     CI_JOB_NAME: $(System.JobDisplayName)
     TRAVIS_BRANCH: $(Build.SourceBranchName) # FIXME
+
+    SRC: .
+    NO_CCACHE: 1
+
     # Explicitly decrypt secret variables
     # See https://docs.microsoft.com/azure/devops/pipelines/process/variables?view=azure-devops&tabs=yaml%2Cbatch#secret-variables
     SCCACHE_AZURE_CONNECTION_STRING: $(SCCACHE_AZURE_CONNECTION_STRING_SECRET)
