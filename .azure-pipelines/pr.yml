@@ -4,7 +4,7 @@
 
 trigger: none
 pr:
-- master # TODO: really just want any branch, but want an explicit "pr" property set so it's clear
+- master # FIXME: really just want any branch, but want an explicit "pr" property set so it's clear
 
 variables:
 - group: caching-pr
