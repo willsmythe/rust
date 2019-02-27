@@ -2,12 +2,12 @@
 # Azure Pipelines "try" branch build for Rust
 # 
 
-variables:
-- group: caching
-
 pr: none
 trigger:
 - try
+
+variables:
+- group: caching
 
 jobs:
 - job: Linux
