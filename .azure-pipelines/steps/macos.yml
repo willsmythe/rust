@@ -23,7 +23,7 @@ steps:
     export CXX=`pwd`/clang+llvm-7.0.0-x86_64-apple-darwin/bin/clang++
     echo "##vso[task.setvariable variable=CXX]$CXX"
     
-    echo "##vso[task.setvariable variable=AR]$ar"
+    echo "##vso[task.setvariable variable=AR]ar"
 
     # FIXME: fix
     echo "##vso[task.setvariable variable=TRAVIS_OS_NAME]osx"
