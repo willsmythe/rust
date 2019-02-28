@@ -23,8 +23,9 @@ fi
 ci_dir=`cd $(dirname $0) && pwd`
 source "$ci_dir/shared.sh"
 
-if [ "$TRAVIS" != "true" ] || [ "$TRAVIS_BRANCH" == "auto" ]; then
-    RUST_CONFIGURE_ARGS="$RUST_CONFIGURE_ARGS --set build.print-step-timings --enable-verbose-tests"
+BRANCH=$(getCIBranch)
+if [ "$TRAVIS" != "true" ] || [ $BRANCH_NAME == "auto" ]; then
+  RUST_CONFIGURE_ARGS="$RUST_CONFIGURE_ARGS --set build.print-step-timings --enable-verbose-tests"
 fi
 
 RUST_CONFIGURE_ARGS="$RUST_CONFIGURE_ARGS --enable-sccache"
@@ -109,7 +110,7 @@ travis_time_finish
 # Display the CPU and memory information. This helps us know why the CI timing
 # is fluctuating.
 travis_fold start log-system-info
-if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+if isOSX; then
     system_profiler SPHardwareDataType || true
     sysctl hw || true
     ncpus=$(sysctl -n hw.ncpu)
