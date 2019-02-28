@@ -5,16 +5,12 @@ steps:
     date && (curl -fs --head https://google.com | grep ^Date: | sed 's/Date: //g' || true)
   displayName: Log time information (before)
 
-# FIXME: for whatever reason the value of RUN_SCRIPT ends with a single quote .. why? Should need this substituion logic
+# FIXME: for whatever reason the value of RUN_SCRIPT ends with a single quote on macOS .. why? Should need this substituion logic
 # FIXME: shouldn't need to set CI, TRavis, CI_JOB_NAME, etc here ... how is $IMAGE different from $CI_JOB_NAME?
 - bash: |    
     echo RUN_SCRIPT="$RUN_SCRIPT"
     export RUN_SCRIPT="${RUN_SCRIPT//\'}"
     echo RUN_SCRIPT="$RUN_SCRIPT"
-
-    echo TRAVIS_OS_NAME="$TRAVIS_OS_NAME"
-    export TRAVIS_OS_NAME="${TRAVIS_OS_NAME//\'}"
-    echo TRAVIS_OS_NAME="$TRAVIS_OS_NAME"
 
     echo IMAGE="$IMAGE"
     export IMAGE="${IMAGE//\'}"

@@ -85,8 +85,8 @@ if [ -f "$docker_dir/$image/Dockerfile" ]; then
       fi
     fi
 elif [ -f "$docker_dir/disabled/$image/Dockerfile" ]; then
-    if [ -n "$TRAVIS_OS_NAME" ]; then
-        echo Cannot run disabled images on travis!
+    if isCI; then
+        echo Cannot run disabled images on CI!
         exit 1
     fi
     # retry messes with the pipe from tar to docker. Not needed on non-travis
@@ -145,6 +145,8 @@ exec docker \
   --env LOCAL_USER_ID=`id -u` \
   --env TRAVIS \
   --env TRAVIS_BRANCH \
+  --env TF_BUILD \
+  --env BUILD_SOURCEBRANCHNAME \
   --env TOOLSTATE_REPO_ACCESS_TOKEN \
   --env CI_JOB_NAME="${CI_JOB_NAME-$IMAGE}" \
   --volume "$HOME/.cargo:/cargo" \

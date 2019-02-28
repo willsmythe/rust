@@ -25,7 +25,7 @@ function retry {
 }
 
 function isCI {
-  [ "$TRAVIS" = "true" ] || [ "$TF_BUILD" = "True" ]
+  [ "$CI" = "true" ] || [ "$TRAVIS" = "true" ] || [ "$TF_BUILD" = "True" ]
 }
 
 function isOSX {
@@ -73,4 +73,3 @@ if ! declare -F travis_fold; then
     travis_time_finish() { return 0; }
   fi
 fi
-
