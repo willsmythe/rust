@@ -137,10 +137,7 @@ steps:
     sh src/ci/run.sh && sccache --show-stats
   env:      
     CI: true
-    TRAVIS: true
-    APPVEYOR: True
     CI_JOB_NAME: $(System.JobDisplayName)
-    TRAVIS_BRANCH: $(Build.SourceBranchName)
 
     SRC: .
     NO_CCACHE: 1
