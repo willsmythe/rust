@@ -106,42 +106,19 @@ jobs:
       dist-x86_64-netbsd:
         DEPLOY: 1
 
-      asmjs:
-        DEPLOY: 0
-
-      i686-gnu:
-        DEPLOY: 0
-
-      i686-gnu-nopt:
-        DEPLOY: 0
-
-      test-various:
-        DEPLOY: 0
-
-      x86_64-gnu:
-        DEPLOY: 0
-
-      x86_64-gnu-full-bootstrap:
-        DEPLOY: 0
-
-      x86_64-gnu-aux:
-        DEPLOY: 0
-
-      x86_64-gnu-tools:
-        DEPLOY: 0
+      asmjs: {}
+      i686-gnu: {}
+      i686-gnu-nopt: {}
+      test-various: {}
+      x86_64-gnu: {}
+      x86_64-gnu-full-bootstrap: {}      
+      x86_64-gnu-aux: {}
+      x86_64-gnu-tools: {}
       # FIXME if: branch = auto OR (type = pull_request AND commit_message =~ /(?i:^update.*\b(rls|rustfmt|clippy|miri|cargo)\b)/)
-
-      x86_64-gnu-debug:
-        DEPLOY: 0
-
-      x86_64-gnu-nopt:
-        DEPLOY: 0
-
-      x86_64-gnu-distcheck:
-        DEPLOY: 0
-
-      mingw-check:
-        DEPLOY: 0
+      x86_64-gnu-debug: {}
+      x86_64-gnu-nopt: {}
+      x86_64-gnu-distcheck: {}
+      mingw-check: {}
 
 - job: macOS
   timeoutInMinutes: 600
