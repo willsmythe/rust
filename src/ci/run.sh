@@ -2,25 +2,6 @@
 
 set -e
 
-<<<<<<< HEAD
-if [[ "${INFINITE_SLEEP}" -eq 1 ]]; then
-    echo "Sleeping for 3.5 hours y'all"
-    i=0
-    while [[ "$i" -le 210 ]]; do
-        echo "$i minutes passed"
-        i=$((i+1))
-        sleep 60
-    done
-    echo "Awoke!"
-elif [[ "${INFINITE_SLEEP}" -eq 2 ]]; then
-    while true; do
-        echo "foo"
-        sleep 60
-    done
-else
-    echo "travis has a lower timeout"
-fi
-
 if [ -n "$CI_JOB_NAME" ]; then
   echo "[CI_JOB_NAME=$CI_JOB_NAME]"
 fi
@@ -133,5 +114,28 @@ if isOSX; then
     system_profiler SPHardwareDataType || true
     sysctl hw || true
     ncpus=$(sysctl -n hw.ncpu)
->>>>>>> b2658c9bac... Avoid TRAVIS-specific env vars; add back IPv6 fix; extra logging for macOS single quote issue
+else
+    cat /proc/cpuinfo || true
+    cat /proc/meminfo || true
+    ncpus=$(grep processor /proc/cpuinfo | wc -l)
+fi
+travis_fold end log-system-info
 
+if [ ! -z "$SCRIPT" ]; then
+  sh -x -c "$SCRIPT"
+else
+  do_make() {
+    travis_fold start "make-$1"
+    travis_time_start
+    echo "make -j $ncpus $1"
+    make -j $ncpus $1
+    local retval=$?
+    travis_fold end "make-$1"
+    travis_time_finish
+    return $retval
+  }
+
+  do_make tidy
+  do_make all
+  do_make "$RUST_CHECK_TARGET"
+fi
